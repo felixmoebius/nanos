@@ -233,18 +233,62 @@ static boolean get_config_addr(tuple root, symbol s, ip4_addr_t *addr)
     return false;
 }
 
+static ip4_addr_t cmdline_ip;
+static ip4_addr_t cmdline_gw;
+static ip4_addr_t cmdline_netmask;
+
+void net_parse_cmdline_arg(const char *str, int len)
+{
+    char buf[MAX_ADDR_LEN + 1];
+    ip4_addr_t *dst;
+
+    if (!runtime_memcmp(str, "ip=", sizeof("ip=") - 1)) {
+        runtime_memcpy(buf, &str[3], len - 3);
+        buf[len - 3] = '\0';
+        dst = &cmdline_ip;
+    } else if (!runtime_memcmp(str, "gw=", sizeof("gw=") - 1)) {
+        runtime_memcpy(buf, &str[3], len - 3);
+        buf[len - 3] = '\0';
+        dst = &cmdline_gw;
+    } else if (!runtime_memcmp(str, "mask=", sizeof("mask=") - 1)) {
+        runtime_memcpy(buf, &str[5], len - 5);
+        buf[len - 5] = '\0';
+        dst = &cmdline_netmask;
+    } else {
+        rprintf("unknown net arg\n");
+        return;
+    }
+
+    if (ip4addr_aton(buf, dst) != 1)
+        rprintf("invalid ip address\n");
+
+}
+
 static boolean get_static_config(tuple t, struct netif *n, const char *ifname, boolean trace) {
     ip4_addr_t ip;
     ip4_addr_t netmask;
     ip4_addr_t gw;
 
-    if (!get_config_addr(t, sym(ipaddr), &ip))
+    rprintf("xx ip=%s\n", ip4addr_ntoa(&cmdline_ip));
+    rprintf("xx gw=%s\n", ip4addr_ntoa(&cmdline_gw));
+    rprintf("xx mask=%s\n", ip4addr_ntoa(&cmdline_netmask));
+
+    if (cmdline_ip.addr) {
+        rprintf("ip overwritten by cmdline\n");
+        ip = cmdline_ip;
+    } else if (!get_config_addr(t, sym(ipaddr), &ip))
         return false;
 
-    if (!get_config_addr(t, sym(netmask), &netmask))
+    if (cmdline_netmask.addr) {
+        rprintf("netmask overwritten by cmdline\n");
+        netmask = cmdline_netmask;
+    } else if (!get_config_addr(t, sym(netmask), &netmask))
         ip4_addr_set_u32(&netmask, lwip_htonl(0xffffff00)); // 255.255.255.0
 
-    if (!get_config_addr(t, sym(gateway), &gw)) {
+    if (cmdline_gw.addr) {
+        rprintf("gateway overwritten by cmdline\n");
+        gw = cmdline_gw;
+    } else if (!get_config_addr(t, sym(gateway), &gw)) {
         // common best practices are: network + 1 or broadcast - 1,
         // so we will use latter if former is in use.
         u32_t ip_after_network = (netmask.addr & ip.addr) + lwip_htonl(1);
@@ -254,7 +298,7 @@ static boolean get_static_config(tuple t, struct netif *n, const char *ifname, b
             ip4_addr_set_u32(&gw, ip_after_network);
     }
 
-    if (trace) {
+    if (1) {
         rprintf("NET: static IP config for interface %s:\n", ifname);
         rprintf(" address\t%s\n", ip4addr_ntoa(&ip));
         rprintf(" netmask\t%s\n", ip4addr_ntoa(&netmask));

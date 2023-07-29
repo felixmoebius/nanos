@@ -27,7 +27,7 @@
 #define BOOT_PARAM_OFFSET_CMDLINE_SIZE  0x0238
 #define BOOT_PARAM_OFFSET_E820_TABLE    0x02D0
 
-//#define INIT_DEBUG
+#define INIT_DEBUG
 //#define MM_DEBUG
 #ifdef INIT_DEBUG
 #define init_debug(x, ...) do {rprintf("INIT: " x "\n", ##__VA_ARGS__);} while(0)
@@ -399,6 +399,8 @@ static inline void jump_to_virtual(void) {
         1: \n");
 }
 
+void net_parse_cmdline_arg(const char *str, int len);
+
 static void cmdline_parse(const char *cmdline)
 {
     early_init_debug("parsing cmdline");
@@ -411,9 +413,16 @@ static void cmdline_parse(const char *cmdline)
         if (prefix_end && (prefix_end < opt_end)) {
             int prefix_len = prefix_end - cmdline;
             if ((prefix_len == sizeof("virtio_mmio") - 1) &&
-                    !runtime_memcmp(cmdline, "virtio_mmio", prefix_len))
+                    !runtime_memcmp(cmdline, "virtio_mmio", prefix_len)) {
                 virtio_mmio_parse(get_kernel_heaps(), prefix_end + 1,
                     opt_end - (prefix_end + 1));
+            } else if ((prefix_len == sizeof("net") - 1) &&
+                    !runtime_memcmp(cmdline, "net", prefix_len)) {
+                rprintf("found netarg\n");
+                net_parse_cmdline_arg(prefix_end + 1, opt_end - (prefix_end + 1));
+            } else {
+                rprintf("unknown cmdline argument\n");
+            }
         }
         cmdline = opt_end + 1;
     }
