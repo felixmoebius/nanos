@@ -32,6 +32,7 @@ closure_function(4, 2, boolean, environment_each,
     return true;
 }
 
+extern char callback_arg[128];
 static void build_exec_stack(process p, thread t, Elf64_Ehdr * e, void *start,
         u64 va, tuple process_root, boolean aslr)
 {
@@ -74,6 +75,9 @@ static void build_exec_stack(process p, thread t, Elf64_Ehdr * e, void *start,
         assert(p);
         vector_push(arguments, p);
     }
+
+    buffer abc = wrap_buffer_cstring(transient, callback_arg);
+    vector_push(arguments, abc);
 
     char **argv = stack_allocate(vector_length(arguments) * sizeof(u64));
     buffer a;

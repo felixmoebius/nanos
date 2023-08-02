@@ -401,6 +401,21 @@ static inline void jump_to_virtual(void) {
 
 void net_parse_cmdline_arg(const char *str, int len);
 
+char callback_arg[128];
+void callback_parse_cmdline_arg(const char *str, int len) {
+    /* 
+     * Format is callback.url=<callback>
+     * This will be called with just the url=<callback> part left.
+     * We don't do any actual parsing, just skip ahead and assume
+     * that this is formatted correctly and does not overflow our
+     * buffer.
+     */
+    str += 4;
+    len -= 4;
+    runtime_memcpy(callback_arg, str, len);
+    callback_arg[len] = '\0';
+}
+
 static void cmdline_parse(const char *cmdline)
 {
     early_init_debug("parsing cmdline");
@@ -420,6 +435,10 @@ static void cmdline_parse(const char *cmdline)
                     !runtime_memcmp(cmdline, "net", prefix_len)) {
                 rprintf("found netarg\n");
                 net_parse_cmdline_arg(prefix_end + 1, opt_end - (prefix_end + 1));
+            } else if ((prefix_len == sizeof("callback") - 1) &&
+                    !runtime_memcmp(cmdline, "callback", prefix_len)) {
+                rprintf("found callback arg\n");
+                callback_parse_cmdline_arg(prefix_end + 1, opt_end - (prefix_end + 1));
             } else {
                 rprintf("unknown cmdline argument\n");
             }
