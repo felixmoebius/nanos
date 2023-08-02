@@ -269,10 +269,6 @@ static boolean get_static_config(tuple t, struct netif *n, const char *ifname, b
     ip4_addr_t netmask;
     ip4_addr_t gw;
 
-    rprintf("xx ip=%s\n", ip4addr_ntoa(&cmdline_ip));
-    rprintf("xx gw=%s\n", ip4addr_ntoa(&cmdline_gw));
-    rprintf("xx mask=%s\n", ip4addr_ntoa(&cmdline_netmask));
-
     if (cmdline_ip.addr) {
         rprintf("ip overwritten by cmdline\n");
         ip = cmdline_ip;

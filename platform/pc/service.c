@@ -27,7 +27,7 @@
 #define BOOT_PARAM_OFFSET_CMDLINE_SIZE  0x0238
 #define BOOT_PARAM_OFFSET_E820_TABLE    0x02D0
 
-#define INIT_DEBUG
+// #define INIT_DEBUG
 //#define MM_DEBUG
 #ifdef INIT_DEBUG
 #define init_debug(x, ...) do {rprintf("INIT: " x "\n", ##__VA_ARGS__);} while(0)
